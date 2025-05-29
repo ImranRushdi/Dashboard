@@ -13,12 +13,12 @@ st.title("""Your personal stop Virtual Assistant
 This is my first time using streamlit.""")
 
 #upload data
-#upload_file = st.file_uploader("Please upload here:", type = 'csv')
+upload_file = st.file_uploader("Please upload here:", type = 'csv')
 
 
 #df = pd.read_csv(r"C:\Users\welcome\Desktop\BSMS1306\streamlit\Tips.csv")
-df = pd.read_csv("vgsales.csv")
-#df = pd.read_csv(upload_file)
+#df = pd.read_csv("vgsales.csv")
+df = pd.read_csv(upload_file)
 
 #show data
 st.subheader("Raw Data")
