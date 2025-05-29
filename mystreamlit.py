@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 
 #st.image(r'C:\Users\welcome\Desktop\BSMS1306\streamlit\Header.png')
-st.image('data.jpg', width = 800 )
+#st.image('data.jpg', width = 800 )
 #st.image('OIP.jpg',)
 
 st.date_input("Select a date")
