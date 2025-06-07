@@ -4,7 +4,7 @@ import plotly.express as px
 
 # Set page config
 st.set_page_config(
-    page_title="Postgraduate Employability Dashboard", 
+    page_title="Students Habits VS. Performance", 
     page_icon="🎓", 
     layout="wide"
 )
@@ -14,14 +14,13 @@ st.set_page_config(
 def load_data():
     # Load data from CSV file
     # Replace 'your_data.csv' with your actual file path
-    df = pd.read_csv('careerdata.csv')
+    df = pd.read_csv(r"C:\Users\USER\Desktop\Portfolio Data Analyst\Assignment Data\Dashboard\student_habits_performance.csv")
+    df.head()
     
     # Data cleaning and preprocessing (if needed)
     # Example: Convert columns to proper types
-    if 'Starting_Salary' in df.columns:
-        df['Starting_Salary'] = pd.to_numeric(df['Starting_Salary'], errors='coerce')
-    if 'University_GPA' in df.columns:
-        df['University_GPA'] = pd.to_numeric(df['University_GPA'], errors='coerce')
+    df_cleaned = df[df['gender'] != 'Other']
+    df_cleaned.to_csv('cleaned_file.csv', index=False)
     
     return df
 
