@@ -55,23 +55,17 @@ st.markdown("Analyzing the correlation of students habits and their academic per
 
 # KPI cards - Based on selected filters
 st.subheader("Key Performance Indicators")
-col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4, col5 = st.columns(5)
 
 with col1:
     st.metric("📈 Average Exam Score", f"{df['Exam_Score'].mean():.2f}")
 
     st.metric("⏳ Avg. Study Hours/Day", f"{df['Study_Hours_Per_Day'].mean():.2f} hrs")
 
-    st.metric("💤 Avg. Sleep Hours", f"{df['Sleep_Hours'].mean():.2f} hrs")
-
 with col2:
     st.metric("📅 Avg. Attendance", f"{df['Attendance_Percentage'].mean():.2f}%")
 
     st.metric("❤️ Avg. Mental Health", f"{df['Mental_Health_Rating'].mean():.2f} / 10")
-
-    exercise_count = df[df['Exercise_Frequency_Per_Week'] > 0].shape[0]
-    percent_exercising = (exercise_count / df.shape[0]) * 100 if df.shape[0] else 0
-    st.metric("💪 % Regular Exercise", f"{percent_exercising:.1f}%")
 
 with col3:
     diet_mode = df['Diet_Quality'].mode()
@@ -83,10 +77,25 @@ with col3:
 
     part_time_count = df[df['Part_Time_Job'] == 'Yes'].shape[0]
     part_time_pct = (part_time_count / df.shape[0]) * 100 
+    
+with col4:
+    st.metric("💤 Avg. Sleep Hours", f"{df['Sleep_Hours'].mean():.2f} hrs")
+    
+    exercise_count = df[df['Exercise_Frequency_Per_Week'] > 0].shape[0]
+    percent_exercising = (exercise_count / df.shape[0]) * 100 if df.shape[0] else 0
+    st.metric("💪 % Regular Exercise", f"{percent_exercising:.1f}%")
+
+
+with col5:
+    part_time_count = df[df['Part_Time_Job'] == 'Yes'].shape[0]
+    part_time_pct = (part_time_count / df.shape[0]) * 100 
     if not df.empty:
         st.metric("📈 Average Exam Score", f"{df['Exam_Score'].mean():.2f}")
     else:
         st.metric("📈 Average Exam Score", "N/A")
+
+    internet_mode = df['Internet_Quality'].mode()
+    st.metric("🌐 Most Common Internet Quality", internet_mode[0] if not internet_mode.empty else "N/A")
 
 # Sidebar filters
 st.sidebar.header("Filter Data")
