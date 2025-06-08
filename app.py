@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-from sklearn.tree import DecisionTreeClassifier, plot_tree
+from scipy.stats import f_oneway, chi2_contingency
 
 
 # Set page config
@@ -243,7 +243,7 @@ for col, selected in cat_selected.items():
 # Remove the image coordinates import at top
 # from streamlit_image_coordinates import streamlit_image_coordinates  # Remove this line
 
-# --- Replace the image filter section with this branch-like slicer ---
+# --- Branch Selector with Proper Categorical Handling ---
 st.subheader("🌿 Branch Selector - Choose Two Variables to Explore")
 
 # Create two columns for branch selection
@@ -279,10 +279,9 @@ with col2:
         key="branch2"
     )
 
-# Add some branch-like visual styling
+# Branch connector visualization
 st.markdown("""
 <style>
-    /* Branch connector visualization */
     .branch-connector {
         display: flex;
         justify-content: center;
@@ -291,14 +290,14 @@ st.markdown("""
     .branch-node {
         width: 15px;
         height: 15px;
-        background-color: #00ffe7;
+        background-color: #4CAF50;
         border-radius: 50%;
         margin: 0 10px;
     }
     .branch-line {
         width: 100px;
         height: 2px;
-        background-color: #00ffe7;
+        background-color: #4CAF50;
         margin: 6px 0;
     }
 </style>
@@ -309,184 +308,203 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-
-# --- Update the visualization section to use the selected branches ---
+# --- Visualization Logic with Proper Categorical Handling ---
 if branch1 and branch2:
-    st.subheader(f"Relationship between {branch1.replace('_', ' ')} and {branch2.replace('_', ' ')}")
+    st.subheader(f"Relationship between {branch1.replace('_', ' ').title()} and {branch2.replace('_', ' ').title()}")
     
-    # Create a figure with two subplots
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6), facecolor='#0f1117')
+    # Determine variable types
+    branch1_is_categorical = filtered_df[branch1].dtype == 'object'
+    branch2_is_categorical = filtered_df[branch2].dtype == 'object'
     
-    # Scatter plot
-    sns.scatterplot(
-        data=filtered_df,
-        x=branch1,
-        y=branch2,
-        ax=ax1,
-        color='#00ffe7',
-        alpha=0.7
-    )
-    ax1.set_title(f"Scatter Plot", color='#00ffe7')
-    ax1.set_facecolor('#0f1117')
-    ax1.grid(color='#1a1f2e', linestyle='--', linewidth=0.5)
-    
-    # Regression plot
-    sns.regplot(
-        data=filtered_df,
-        x=branch1,
-        y=branch2,
-        ax=ax2,
-        scatter_kws={'color': '#00ffe7', 'alpha': 0.5},
-        line_kws={'color': '#ff6b6b', 'linewidth': 2}
-    )
-    ax2.set_title(f"Regression Line", color='#00ffe7')
-    ax2.set_facecolor('#0f1117')
-    ax2.grid(color='#1a1f2e', linestyle='--', linewidth=0.5)
-    
-    # Style both axes
-    for ax in [ax1, ax2]:
-        ax.tick_params(colors='white')
-        ax.xaxis.label.set_color('white')
-        ax.yaxis.label.set_color('white')
-    
-    st.pyplot(fig)
-    
-    # Calculate and display correlation
-    correlation = filtered_df[[branch1, branch2]].corr().iloc[0,1]
-    st.metric(
-        "Correlation Strength",
-        f"{correlation:.2f}",
-        help="Values closer to 1 or -1 indicate stronger relationships"
-    )
-
-
-# --- Correlation & Performance Visuals ---
-st.header("Correlation between Student Habits and Exam Performance")
-
-# If 2 filters selected, show graph
-if len(st.session_state.selected_filters) == 2:
-    x_col, y_col = st.session_state.selected_filters
-    if x_col in filtered_df.columns and y_col in filtered_df.columns:
-        st.subheader(f"Relationship between {label_map[x_col]} and {label_map[y_col]}")
-        
-        # Create a figure with two subplots
+    if not branch1_is_categorical and not branch2_is_categorical:
+        # Both numeric - scatter plot + regression
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
         
         # Scatter plot
-        sns.scatterplot(data=filtered_df, x=x_col, y=y_col, ax=ax1)
-        ax1.set_title(f"{label_map[x_col]} vs. {label_map[y_col]}")
+        sns.scatterplot(data=filtered_df, x=branch1, y=branch2, ax=ax1, color='#4CAF50')
+        ax1.set_title(f"Scatter Plot")
         
         # Regression plot
-        sns.regplot(data=filtered_df, x=x_col, y=y_col, ax=ax2)
-        ax2.set_title(f"Regression: {label_map[x_col]} vs. {label_map[y_col]}")
+        sns.regplot(data=filtered_df, x=branch1, y=branch2, ax=ax2, 
+                   scatter_kws={'color': '#4CAF50'}, 
+                   line_kws={'color': '#FF5722'})
+        ax2.set_title(f"Regression Line")
         
-        st.pyplot(fig)
+        # Calculate Pearson correlation
+        correlation = filtered_df[[branch1, branch2]].corr().iloc[0,1]
+        corr_text = f"Pearson r = {correlation:.2f}"
         
-        # Calculate correlation
-        correlation = filtered_df[[x_col, y_col]].corr().iloc[0,1]
-        st.metric("Correlation Coefficient", f"{correlation:.2f}")
+    elif branch1_is_categorical and not branch2_is_categorical:
+        # Categorical vs numeric - box plot + swarm plot
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+        
+        # Box plot
+        sns.boxplot(data=filtered_df, x=branch1, y=branch2, ax=ax1, palette="viridis")
+        ax1.set_title(f"Distribution by {branch1.replace('_', ' ').title()}")
+        ax1.tick_params(axis='x', rotation=45)
+        
+        # Swarm plot
+        sns.swarmplot(data=filtered_df, x=branch1, y=branch2, ax=ax2, color='#4CAF50')
+        ax2.set_title(f"Value Distribution")
+        ax2.tick_params(axis='x', rotation=45)
+        
+        # Calculate ANOVA p-value
+        groups = filtered_df.groupby(branch1)[branch2].apply(list)
+        if len(groups) >= 2:
+            _, p_value = f_oneway(*groups)
+            corr_text = f"ANOVA p-value = {p_value:.4f}"
+        else:
+            corr_text = "Insufficient groups for ANOVA"
+            
+    elif not branch1_is_categorical and branch2_is_categorical:
+        # Numeric vs categorical - flip the axes
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+        
+        # Box plot
+        sns.boxplot(data=filtered_df, x=branch2, y=branch1, ax=ax1, palette="viridis")
+        ax1.set_title(f"Distribution by {branch2.replace('_', ' ').title()}")
+        ax1.tick_params(axis='x', rotation=45)
+        
+        # Swarm plot
+        sns.swarmplot(data=filtered_df, x=branch2, y=branch1, ax=ax2, color='#4CAF50')
+        ax2.set_title(f"Value Distribution")
+        ax2.tick_params(axis='x', rotation=45)
+        
+        # Calculate ANOVA p-value
+        groups = filtered_df.groupby(branch2)[branch1].apply(list)
+        if len(groups) >= 2:
+            _, p_value = f_oneway(*groups)
+            corr_text = f"ANOVA p-value = {p_value:.4f}"
+        else:
+            corr_text = "Insufficient groups for ANOVA"
+            
+    else:
+        # Both categorical - contingency table and heatmap
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+        
+        # Count plot
+        sns.countplot(data=filtered_df, x=branch1, hue=branch2, ax=ax1, palette="viridis")
+        ax1.set_title(f"Count by {branch1.replace('_', ' ').title()}")
+        ax1.legend(title=branch2.replace('_', ' ').title())
+        ax1.tick_params(axis='x', rotation=45)
+        
+        # Heatmap
+        crosstab = pd.crosstab(filtered_df[branch1], filtered_df[branch2])
+        sns.heatmap(crosstab, annot=True, fmt='d', cmap='viridis', ax=ax2)
+        ax2.set_title(f"Contingency Table")
+        
+        # Chi-square test
+        from scipy.stats import chi2_contingency
+        chi2, p, _, _ = chi2_contingency(crosstab)
+        corr_text = f"Chi-square p-value = {p:.4f}"
+    
+    st.pyplot(fig)
+    st.metric("Statistical Relationship", corr_text)
 
-# Graph selection filter
-st.subheader("Select Visualization")
+# Graph selection filter with correlation
+st.subheader("Select a Factor")
 
-# Define all available visualizations
+# Define all available visualizations with correlation types
 visualization_options = {
-    "Study Hours vs Exam Score": ("Study_Hours_Per_Day", "Exam_Score", "scatter"),
-    "Social Media vs Exam Score": ("Social_Media_Hours", "Exam_Score", "scatter"),
-    "Netflix Hours vs Exam Score": ("Netflix_Hours", "Exam_Score", "scatter"),
-    "Sleep Hours vs Exam Score": ("Sleep_Hours", "Exam_Score", "scatter"),
-    "Attendance vs Exam Score": ("Attendance_Percentage", "Exam_Score", "scatter"),
-    "Mental Health vs Exam Score": ("Mental_Health_Rating", "Exam_Score", "box"),
-    "Diet Quality vs Exam Score": ("Diet_Quality", "Exam_Score", "box"),
-    "Internet Quality vs Exam Score": ("Internet_Quality", "Exam_Score", "box"),
-    "Part-Time Job vs Exam Score": ("Part_Time_Job", "Exam_Score", "box"),
-    "Exercise Frequency vs Exam Score": ("Exercise_Frequency_Per_Week", "Exam_Score", "box"),
-    "Extracurriculars vs Exam Score": ("Extracurricular_Participation", "Exam_Score", "box")
+    "Study Hours": ("Study_Hours_Per_Day", "Exam_Score", "scatter", "pearson"),
+    "Social Media Hours": ("Social_Media_Hours", "Exam_Score", "scatter", "pearson"),
+    "Netflix Hours": ("Netflix_Hours", "Exam_Score", "scatter", "pearson"),
+    "Sleep Hours": ("Sleep_Hours", "Exam_Score", "scatter", "pearson"),
+    "Attendance Percentage": ("Attendance_Percentage", "Exam_Score", "scatter", "pearson"),
+    "Mental Health Rating": ("Mental_Health_Rating", "Exam_Score", "box", "spearman"),
+    "Diet Quality": ("Diet_Quality", "Exam_Score", "box", "spearman"),
+    "Internet Quality": ("Internet_Quality", "Exam_Score", "box", "spearman"),
+    "Part-Time Job": ("Part_Time_Job", "Exam_Score", "box", "anova"),
+    "Exercise Frequency": ("Exercise_Frequency_Per_Week", "Exam_Score", "box", "spearman"),
+    "Extracurriculars": ("Extracurricular_Participation", "Exam_Score", "box", "anova")
 }
 
 # Create selection dropdown
-selected_viz = st.selectbox("Choose a visualization:", list(visualization_options.keys()))
+selected_viz = st.selectbox("Choose a Factor:", list(visualization_options.keys()))
 
 # Get the selected visualization parameters
-x_col, y_col, viz_type = visualization_options[selected_viz]
+x_col, y_col, viz_type, corr_type = visualization_options[selected_viz]
+
+# Calculate correlation based on type
+def calculate_correlation(data, x, y, method):
+    # Handle string/categorical data
+    if data[x].dtype == 'object':
+        # For categorical variables, use ANOVA if >2 groups, t-test if 2 groups
+        groups = data.groupby(x)[y].apply(list).values
+        if len(groups) < 2:
+            return None
+        if method == "anova":
+            if len(groups) == 2:
+                # Use t-test for binary categories
+                from scipy.stats import ttest_ind
+                _, p_val = ttest_ind(groups[0], groups[1])
+                return p_val
+            else:
+                _, p_val = f_oneway(*groups)
+                return p_val
+        else:
+            # For non-ANOVA methods with strings, convert to codes
+            data = data.copy()
+            data[x] = pd.factorize(data[x])[0]
+    
+    # Handle numeric data
+    try:
+        if method == "pearson":
+            return data[[x, y]].corr(method='pearson').iloc[0,1]
+        elif method == "spearman":
+            return spearmanr(data[x], data[y])[0]
+        elif method == "anova":
+            groups = [data[data[x] == val][y] for val in data[x].unique()]
+            if len(groups) < 2:
+                return None
+            _, p_val = f_oneway(*groups)
+            return p_val
+    except:
+        return None
+    return None
+
+# Calculate correlation
+correlation = calculate_correlation(filtered_df, x_col, y_col, corr_type)
 
 # Display the selected visualization
 fig, ax = plt.subplots(figsize=(8, 5))
 
 if viz_type == "scatter":
-    sns.scatterplot(data=filtered_df, x=x_col, y=y_col, ax=ax)
-    ax.set_title(f"{x_col.replace('_', ' ')} vs. {y_col.replace('_', ' ')}")
+    # Convert strings to numeric codes if needed
+    plot_data = filtered_df.copy()
+    if plot_data[x_col].dtype == 'object':
+        plot_data[x_col] = pd.factorize(plot_data[x_col])[0]
+    
+    sns.scatterplot(data=plot_data, x=x_col, y=y_col, ax=ax)
+    title = f"{x_col.replace('_', ' ')} vs. {y_col.replace('_', ' ')}"
+    if correlation is not None and not pd.isna(correlation):
+        title += f"\nPearson r = {correlation:.2f}" if corr_type == "pearson" else f"\nCorrelation = {correlation:.2f}"
+    ax.set_title(title)
 else:  # box plot
     sns.boxplot(data=filtered_df, x=x_col, y=y_col, ax=ax)
-    ax.set_title(f"Exam Score by {x_col.replace('_', ' ')}")
+    title = f"Exam Score by {x_col.replace('_', ' ')}"
+    
+    if correlation is not None:
+        if corr_type == "anova":
+            title += f"\nANOVA p-value = {correlation:.4f}"
+            if correlation < 0.05:
+                title += " (significant)"
+        else:
+            title += f"\nSpearman ρ = {correlation:.2f}"
+    
+    ax.set_title(title)
     plt.xticks(rotation=45)
 
 st.pyplot(fig)
-# Correlation Heatmap (always show)
-st.subheader("Correlation Matrix")
-numeric_cols = [
-    "Study_Hours_Per_Day", "Social_Media_Hours", "Netflix_Hours",
-    "Sleep_Hours", "Exercise_Frequency_Per_Week", "Attendance_Percentage", "Exam_Score"
-]
 
-heatmap_data = filtered_df[numeric_cols].dropna()
-if not heatmap_data.empty:
-   # Create the figure with dark background
-    fig, ax = plt.subplots(figsize=(10, 8), facecolor='#0f1117')
-
-    # Calculate correlation matrix
-    corr_matrix = heatmap_data.corr()
-
-    # Create a mask for correlations below 0.83
-    text_colors = np.where(np.abs(corr_matrix.values) < 0.82, "black", "white")
-
-    # Create heatmap with custom styling
-    heatmap = sns.heatmap(
-        corr_matrix, 
-         annot=True, 
-        cmap="coolwarm", 
-        ax=ax,
-        annot_kws={
-             "color": "white",  # Default color (will be overridden)
-            "fontsize": 10
-        },
-        linewidths=0.5,
-        linecolor='#1a1f2e',
-        vmin=-1, vmax=1
-    )
-
-    # Manually set text colors based on correlation strength
-    for i in range(len(corr_matrix)):
-        for j in range(len(corr_matrix)):
-            text = heatmap.texts[i * len(corr_matrix) + j]
-            text.set_color(text_colors[i, j])
-
-    # Customize the color bar
-    cbar = heatmap.collections[0].colorbar
-    cbar.ax.yaxis.set_tick_params(color='white')
-    plt.setp(cbar.ax.get_yticklabels(), color='white')
-
-    # Style the title and axes
-    ax.set_title(
-        "Correlation Matrix of Habits and Exam Score", 
-        color='#00ffe7',
-        pad=20,
-        fontsize=14
-    )
-
-    ax.tick_params(
-        axis='both',
-        which='both',
-        colors='white',
-        length=0
-    )
-
-    for _, spine in ax.spines.items():
-        spine.set_visible(True)
-        spine.set_color('#1a1f2e')
-
-    st.pyplot(fig)
-
+# Interpretation note
+if viz_type == "scatter":
+    st.caption("Pearson correlation ranges from -1 (perfect negative) to +1 (perfect positive)")
+elif viz_type == "box":
+    if corr_type == "spearman":
+        st.caption("Spearman correlation ranges from -1 (perfect negative) to +1 (perfect positive)")
+    elif corr_type == "anova":
+        st.caption("ANOVA p-value < 0.05 suggests significant difference between groups")
 # Raw data view
 st.subheader("Filtered Data Preview")
 st.dataframe(filtered_df.head(100), height=300)
