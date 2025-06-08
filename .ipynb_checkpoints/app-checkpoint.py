@@ -3,9 +3,7 @@ import pandas as pd
 import plotly.express as px
 import seaborn as sns
 import matplotlib.pyplot as plt
-import plotly.graph_objects as go
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
 from scipy.stats import f_oneway, chi2_contingency
 
 

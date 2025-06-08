@@ -4,3 +4,5 @@ seaborn
 plotly.express
 matplotlib
 numpy
+urllib
+scipy
