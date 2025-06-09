@@ -16,7 +16,7 @@ st.set_page_config(
 )
 
 try:
-    with open(r"C:\Users\user\Documents\GitHub\Dashboard\back.svg", "r", encoding="utf-8") as f:
+    with open(r"back.svg", "r", encoding="utf-8") as f:
         svg_content = f.read()
 except Exception as e:
     st.error(f"Error reading SVG file: {e}")
@@ -95,7 +95,7 @@ plt.rcParams['ytick.color'] = "#FFFFFF"
 @st.cache_data
 def load_data():
     # Load data from CSV file
-    df = pd.read_csv(r"C:\Users\user\Documents\GitHub\Dashboard\student_habits_performance.csv")
+    df = pd.read_csv(r"student_habits_performance.csv")
     
     # Clean Data
     df_cleaned = df[df['gender'] != 'Other']
